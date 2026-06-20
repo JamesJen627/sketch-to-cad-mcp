@@ -8,6 +8,20 @@ from ezdxf.enums import TextEntityAlignment
 from .config_loader import load_homestay_config
 from .vectorize import LineSegment, classify_layer
 
+CHINESE_STYLE = "SimHei"
+FALLBACK_TITLE = "Sketch-to-CAD"
+
+
+def _ensure_chinese_style(doc: ezdxf.document.Drawing) -> None:
+    """注册支持中文的 DXF 文字样式，避免 AutoCAD 显示 ????。"""
+    if CHINESE_STYLE in doc.styles:
+        return
+    doc.styles.add(CHINESE_STYLE, font="simhei.ttf")
+    try:
+        doc.header["$DWGCODEPAGE"] = "ANSI_936"
+    except (AttributeError, KeyError):
+        pass
+
 
 def write_dxf(
     segments: list[LineSegment],
@@ -15,10 +29,12 @@ def write_dxf(
     *,
     scale_mm_per_pixel: float = 5.0,
     project_name: str = "民宿改造",
+    include_title: bool = True,
 ) -> dict[str, Any]:
     cfg = load_homestay_config()
     doc = ezdxf.new("R2010")
     msp = doc.modelspace()
+    _ensure_chinese_style(doc)
 
     for layer_name, meta in cfg.get("layers", {}).items():
         if layer_name not in doc.layers:
@@ -35,14 +51,24 @@ def write_dxf(
             dxfattribs={"layer": layer},
         )
 
-    # 标题栏文字（民宿项目标识）
-    msp.add_text(
-        f"{project_name} · 手绘转CAD",
-        dxfattribs={
-            "layer": "标注-文字",
-            "height": 250.0,
-        },
-    ).set_placement((0, -500), align=TextEntityAlignment.LEFT)
+    if include_title:
+        title_text = f"{project_name} · 手绘转CAD"
+        msp.add_text(
+            title_text,
+            dxfattribs={
+                "layer": "标注-文字",
+                "height": 250.0,
+                "style": CHINESE_STYLE,
+            },
+        ).set_placement((0, -500), align=TextEntityAlignment.LEFT)
+    else:
+        msp.add_text(
+            FALLBACK_TITLE,
+            dxfattribs={
+                "layer": "标注-文字",
+                "height": 250.0,
+            },
+        ).set_placement((0, -500), align=TextEntityAlignment.LEFT)
 
     doc.saveas(output_path)
     return {

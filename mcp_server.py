@@ -120,6 +120,7 @@ TOOLS: list[dict[str, Any]] = [
         "description": (
             "将手绘图或扫描图转换为 DXF 矢量线稿，并生成预览 PNG。"
             "自动按民宿项目图层（墙体-240/120、轴线等）分类线段。"
+            "返回 quality 质量报告（score/grade/issues/suggest_rerun_with）。"
         ),
         "inputSchema": {
             "type": "object",
@@ -155,6 +156,7 @@ TOOLS: list[dict[str, Any]] = [
         "description": (
             "完整手绘转 CAD 流程：DXF + 预览 PNG，可选导出 DWG，"
             "并自动调用 CAD 规范检查（cad-standard-check skill）。"
+            "返回 quality 质量报告（score/grade/issues/suggest_rerun_with）。"
         ),
         "inputSchema": {
             "type": "object",
