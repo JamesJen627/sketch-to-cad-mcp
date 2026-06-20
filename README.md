@@ -34,7 +34,10 @@ D:\python3.12\python.exe -m pip install -r requirements.txt
 
 ```cmd
 D:\python3.12\python.exe scripts\test_convert.py
+D:\python3.12\python.exe scripts\benchmark.py
 ```
+
+转换结果 JSON 含 `quality` 字段（`score`、`grade`、`issues`、`suggest_rerun_with`），详见 [docs/pilotdeck-integration.md](docs/pilotdeck-integration.md)。
 
 ## PilotDeck 配置
 
@@ -67,6 +70,21 @@ Agent 调用 `sketch_to_cad`，参数示例：
   "preset": "floor_plan",
   "export_dwg": false,
   "run_cad_check": true
+}
+```
+
+返回示例（含质量报告）：
+
+```json
+{
+  "success": true,
+  "dxf_path": "02-CAD原始平面图/一层平面_sketch.dxf",
+  "quality": {
+    "score": 85.2,
+    "grade": "A",
+    "issues": [],
+    "suggest_rerun_with": null
+  }
 }
 ```
 

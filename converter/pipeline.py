@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import subprocess
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +10,20 @@ from .config_loader import get_preset
 from .dxf_writer import assign_layers, write_dxf
 from .postprocess import refine_segments
 from .preprocess import preprocess
-from .vectorize import extract_lines, render_preview
+from .quality import grade_score
+from .vectorize import LineSegment, extract_lines, render_preview
+
+try:
+    from .postprocess import refine_segments
+except ImportError:
+
+    def refine_segments(
+        segments: list[LineSegment],
+        *,
+        preset: str,
+        config: dict | None = None,
+    ) -> list[LineSegment]:
+        return segments
 
 
 @dataclass
@@ -40,6 +52,7 @@ class SketchConvertResult:
     preset: str = "floor_plan"
     scale_mm_per_pixel: float = 5.0
     cad_check: dict[str, Any] | None = None
+    quality: dict[str, Any] | None = None
     warnings: list[str] = field(default_factory=list)
     error: str | None = None
 
@@ -55,6 +68,7 @@ class SketchConvertResult:
             "preset": self.preset,
             "scale_mm_per_pixel": self.scale_mm_per_pixel,
             "cad_check": self.cad_check,
+            "quality": self.quality,
             "warnings": self.warnings,
             "error": self.error,
         }
@@ -123,11 +137,14 @@ def convert_sketch_to_dxf(options: SketchConvertOptions) -> SketchConvertResult:
     preview_path = out_dir / f"{stem}_preview.png"
 
     try:
-        _, _, binary = preprocess(
+        _, gray, binary = preprocess(
             str(input_path),
             deskew_enabled=options.deskew,
             adaptive_threshold=bool(preset_cfg.get("adaptive_threshold", False)),
         )
+        h, w = gray.shape[:2]
+        ink_ratio = float(binary.sum() / 255) / max(h * w, 1)
+
         segments = extract_lines(
             binary,
             canny_low=int(preset_cfg.get("canny_low", 40)),
@@ -137,9 +154,17 @@ def convert_sketch_to_dxf(options: SketchConvertOptions) -> SketchConvertResult:
         segments = refine_segments(segments, preset=options.preset, config=preset_cfg)
         assign_layers(segments, float(preset_cfg.get("thick_line_threshold_px", 4)))
 
+        quality_report = grade_score(segments, preset=options.preset, ink_ratio=ink_ratio)
+
         warnings: list[str] = []
         if not segments:
             warnings.append("未检测到有效线段，请尝试 preset=sketch_rough 或提高图片质量")
+        if quality_report.get("issues"):
+            warnings.extend(quality_report["issues"])
+        if quality_report.get("suggest_rerun_with"):
+            warnings.append(
+                f"建议以 preset={quality_report['suggest_rerun_with']} 重新转换"
+            )
 
         render_preview(binary, segments, str(preview_path))
         meta = write_dxf(
@@ -175,6 +200,7 @@ def convert_sketch_to_dxf(options: SketchConvertOptions) -> SketchConvertResult:
             preset=options.preset,
             scale_mm_per_pixel=scale,
             cad_check=cad_check_result,
+            quality=quality_report,
             warnings=warnings,
         )
     except Exception as e:
