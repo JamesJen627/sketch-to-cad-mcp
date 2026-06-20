@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.egg-info/
+dist/
+build/
+
+# 测试输出（可本地再生）
+test_samples/output/
+benchmark_report.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
