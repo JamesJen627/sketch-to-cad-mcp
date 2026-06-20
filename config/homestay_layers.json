@@ -27,7 +27,12 @@
       "min_line_length_px": 40,
       "thick_line_threshold_px": 5,
       "canny_low": 30,
-      "canny_high": 100
+      "canny_high": 100,
+      "merge_gap_px": 20,
+      "duplicate_dist_px": 12,
+      "min_segment_length_px": 35,
+      "snap_angle_deg": 10,
+      "merge_angle_tol_deg": 8
     },
     "sketch_rough": {
       "description": "潦草草图 / 手机拍照",

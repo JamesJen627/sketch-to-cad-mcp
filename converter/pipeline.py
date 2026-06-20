@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -11,19 +12,7 @@ from .dxf_writer import assign_layers, write_dxf
 from .postprocess import refine_segments
 from .preprocess import preprocess
 from .quality import grade_score
-from .vectorize import LineSegment, extract_lines, render_preview
-
-try:
-    from .postprocess import refine_segments
-except ImportError:
-
-    def refine_segments(
-        segments: list[LineSegment],
-        *,
-        preset: str,
-        config: dict | None = None,
-    ) -> list[LineSegment]:
-        return segments
+from .vectorize import extract_lines, render_preview
 
 
 @dataclass
@@ -220,7 +209,7 @@ def _run_cad_check(dxf_path: str, script_path: str | None) -> dict[str, Any] | N
         return {"skipped": True, "reason": f"未找到 CAD 规范检查脚本: {checker}"}
     try:
         proc = subprocess.run(
-            ["python", str(checker), dxf_path],
+            [sys.executable, str(checker), dxf_path],
             capture_output=True,
             text=True,
             encoding="utf-8",
