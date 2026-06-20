@@ -46,18 +46,33 @@ def binarize(gray: np.ndarray, adaptive: bool = False) -> np.ndarray:
     return binary
 
 
+def _normalize_long_edge(gray: np.ndarray, target: int = 2400) -> np.ndarray:
+    h, w = gray.shape[:2]
+    long_edge = max(h, w)
+    if long_edge <= target or long_edge < 800:
+        return gray
+    scale = target / long_edge
+    new_w = max(1, int(round(w * scale)))
+    new_h = max(1, int(round(h * scale)))
+    return cv2.resize(gray, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+
 def preprocess(
     image_path: str,
     *,
     deskew_enabled: bool = True,
     adaptive_threshold: bool = False,
+    normalize_long_edge: int = 2400,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """返回 (原图BGR, 灰度图, 二值图)。"""
     bgr = load_image(image_path)
     gray = to_grayscale(bgr)
     if deskew_enabled:
         gray = deskew(gray)
+    gray = _normalize_long_edge(gray, target=normalize_long_edge)
     binary = binarize(gray, adaptive=adaptive_threshold)
     kernel = np.ones((2, 2), np.uint8)
     binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel, iterations=1)
+    close_kernel = np.ones((3, 3), np.uint8)
+    binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, close_kernel, iterations=1)
     return bgr, gray, binary

@@ -9,6 +9,7 @@ from typing import Any
 
 from .config_loader import get_preset
 from .dxf_writer import assign_layers, write_dxf
+from .postprocess import refine_segments
 from .preprocess import preprocess
 from .vectorize import extract_lines, render_preview
 
@@ -133,6 +134,7 @@ def convert_sketch_to_dxf(options: SketchConvertOptions) -> SketchConvertResult:
             canny_high=int(preset_cfg.get("canny_high", 120)),
             min_line_length_px=int(preset_cfg.get("min_line_length_px", 25)),
         )
+        segments = refine_segments(segments, preset=options.preset, config=preset_cfg)
         assign_layers(segments, float(preset_cfg.get("thick_line_threshold_px", 4)))
 
         warnings: list[str] = []
