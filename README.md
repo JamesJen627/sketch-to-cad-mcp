@@ -1,6 +1,6 @@
-# 手绘转 CAD MCP
+# sketch-to-cad-mcp
 
-基于 **OpenCV + ezdxf** 的开源矢量化方案，为 PilotDeck 民宿改造项目定制。
+适配 PilotDeck 的手绘/扫描图 → CAD（DXF/DWG）MCP 服务。基于 **OpenCV + ezdxf** 开源矢量化，为民宿改造项目定制。
 
 ## 功能
 
@@ -21,13 +21,19 @@
 
 ```bash
 cd sketch-to-cad-mcp
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+```
+
+Windows 若 `pip` 不可用：
+
+```cmd
+D:\python3.12\python.exe -m pip install -r requirements.txt
 ```
 
 ## 本地测试
 
-```bash
-python scripts/test_convert.py
+```cmd
+D:\python3.12\python.exe scripts\test_convert.py
 ```
 
 ## PilotDeck 配置
@@ -36,7 +42,7 @@ python scripts/test_convert.py
 
 ```yaml
 sketch-to-cad:
-  command: python
+  command: D:\python3.12\python.exe
   args:
     - "sketch-to-cad-mcp/mcp_server.py"
   env:
@@ -44,6 +50,10 @@ sketch-to-cad:
     CAD_CHECK_SCRIPT: ".pilotdeck/skills/cad-standard-check/cad_standard_check.py"
     # ODA_FILE_CONVERTER: "C:/Program Files/ODA/ODAFileConverter.exe"  # 可选 DWG
 ```
+
+## 并行开发
+
+见 [docs/PARALLEL_DEV.md](docs/PARALLEL_DEV.md) 与 GitHub Issue 模板。
 
 ## 使用示例（Agent 对话）
 
