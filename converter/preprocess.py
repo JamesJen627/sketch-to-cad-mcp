@@ -105,6 +105,17 @@ def preprocess(
             cv2.imencode(".png", binary)[1].tofile(str(out / f"{stem}_grid_suppressed.png"))
             if grid_meta:
                 (out / f"{stem}_grid_meta.txt").write_text(str(grid_meta), encoding="utf-8")
+                layout = grid_meta.get("grid_layout") or {}
+                if layout.get("period_h") and layout.get("period_w"):
+                    from .grid_suppress import build_grid_mask_debug
+
+                    mask = build_grid_mask_debug(
+                        binary.shape[:2],
+                        layout,
+                        line_width=int((grid_config or {}).get("grid_line_width", 2)),
+                        dot_radius=int((grid_config or {}).get("grid_dot_radius", 2)),
+                    )
+                    cv2.imencode(".png", mask)[1].tofile(str(out / f"{stem}_grid_mask.png"))
     else:
         binary = binarize(gray, adaptive=adaptive_threshold)
         kernel = np.ones((2, 2), np.uint8)

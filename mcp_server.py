@@ -66,6 +66,9 @@ def _tool_sketch_to_dxf(args: dict[str, Any]) -> dict[str, Any]:
         deskew=bool(args.get("deskew", True)),
         export_dwg=False,
         run_cad_check=False,
+        snap_dimensions=bool(args.get("snap_dimensions", True)),
+        manual_dimensions=args.get("manual_dimensions"),
+        dimension_max_dist_px=float(args.get("dimension_max_dist_px", 120)),
     )
     result = convert_sketch_to_dxf(options)
     return _text_result(result.to_dict(), is_error=not result.success)
@@ -88,6 +91,9 @@ def _tool_sketch_to_cad(args: dict[str, Any]) -> dict[str, Any]:
         export_dwg=bool(args.get("export_dwg", False)),
         run_cad_check=bool(args.get("run_cad_check", True)),
         cad_check_script=args.get("cad_check_script") or os.environ.get("CAD_CHECK_SCRIPT"),
+        snap_dimensions=bool(args.get("snap_dimensions", True)),
+        manual_dimensions=args.get("manual_dimensions"),
+        dimension_max_dist_px=float(args.get("dimension_max_dist_px", 120)),
     )
     result = convert_sketch_to_dxf(options)
     return _text_result(result.to_dict(), is_error=not result.success)
@@ -146,6 +152,28 @@ TOOLS: list[dict[str, Any]] = [
                     "description": "写入 DXF 标题栏的项目名称",
                 },
                 "deskew": {"type": "boolean", "default": True, "description": "是否自动纠偏"},
+                "snap_dimensions": {
+                    "type": "boolean",
+                    "default": True,
+                    "description": "OCR 读取图上尺寸标注并吸附墙线长度（如 3000→3000mm）",
+                },
+                "manual_dimensions": {
+                    "type": "array",
+                    "description": "手动尺寸标注 [{value_mm, center_x, center_y}]，OCR 失败时使用",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "value_mm": {"type": "number"},
+                            "center_x": {"type": "number"},
+                            "center_y": {"type": "number"},
+                        },
+                    },
+                },
+                "dimension_max_dist_px": {
+                    "type": "number",
+                    "default": 120,
+                    "description": "标注中心到墙线的最大匹配距离（像素）",
+                },
             },
             "required": ["input_path"],
         },
@@ -172,6 +200,9 @@ TOOLS: list[dict[str, Any]] = [
                 "scale_mm_per_pixel": {"type": "number"},
                 "project_name": {"type": "string", "default": "新塘村民宿改造"},
                 "deskew": {"type": "boolean", "default": True},
+                "snap_dimensions": {"type": "boolean", "default": True},
+                "manual_dimensions": {"type": "array"},
+                "dimension_max_dist_px": {"type": "number", "default": 120},
                 "export_dwg": {
                     "type": "boolean",
                     "default": False,

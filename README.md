@@ -88,10 +88,38 @@ Agent 调用 `sketch_to_cad`，参数示例：
 }
 ```
 
+## 尺寸标注 OCR 吸附（默认开启）
+
+转换时会尝试 OCR 读取图上数字（如 3000、4500），并吸附到最近墙线，使 **DXF 中该段长度 = 标注 mm 值**。
+
+```json
+{
+  "input_path": "D:/.../平面草图.jpg",
+  "preset": "floor_plan",
+  "snap_dimensions": true
+}
+```
+
+OCR 对手写识别有限，失败时可传 **manual_dimensions**（像素坐标，与纠偏后图片一致）：
+
+```json
+{
+  "manual_dimensions": [
+    {"value_mm": 3000, "center_x": 280, "center_y": 150},
+    {"value_mm": 4500, "center_x": 420, "center_y": 150},
+    {"value_mm": 2500, "center_x": 820, "center_y": 150}
+  ]
+}
+```
+
+返回结果含 `dimension_report`：`labels_found`、`matches`（吸附详情）、`scale_mm_per_pixel`（OCR 校准后比例尺）。
+
+依赖：`rapidocr-onnxruntime`（可选）；内置 OpenCV 数字模板匹配作为兜底。
+
 ## 限制
 
 - 开源矢量化适合**线稿类**输入，复杂渲染图/透视图效果有限
-- 尺寸比例为估算值（`scale_mm_per_pixel`），施工前需人工复核
+- 尺寸：默认 OCR 吸附；无标注时仍用 `scale_mm_per_pixel` 估算
 - DWG 导出依赖 [ODA File Converter](https://www.opendesign.com/guestfiles/oda_file_converter)（免费）
 
 ## 技术栈

@@ -27,6 +27,9 @@ class SketchConvertOptions:
     export_dwg: bool = False
     run_cad_check: bool = False
     cad_check_script: str | None = None
+    snap_dimensions: bool = True
+    manual_dimensions: list[dict[str, Any]] | None = None
+    dimension_max_dist_px: float = 120.0
 
 
 @dataclass
@@ -42,6 +45,7 @@ class SketchConvertResult:
     scale_mm_per_pixel: float = 5.0
     cad_check: dict[str, Any] | None = None
     quality: dict[str, Any] | None = None
+    dimension_report: dict[str, Any] | None = None
     warnings: list[str] = field(default_factory=list)
     error: str | None = None
 
@@ -58,6 +62,7 @@ class SketchConvertResult:
             "scale_mm_per_pixel": self.scale_mm_per_pixel,
             "cad_check": self.cad_check,
             "quality": self.quality,
+            "dimension_report": self.dimension_report,
             "warnings": self.warnings,
             "error": self.error,
         }
@@ -136,7 +141,7 @@ def convert_sketch_to_dxf(options: SketchConvertOptions) -> SketchConvertResult:
     preview_path = out_dir / f"{stem}_preview.png"
 
     try:
-        _, gray, binary = preprocess(
+        bgr, gray, binary = preprocess(
             str(input_path),
             deskew_enabled=options.deskew,
             adaptive_threshold=bool(preset_cfg.get("adaptive_threshold", False)),
@@ -154,11 +159,51 @@ def convert_sketch_to_dxf(options: SketchConvertOptions) -> SketchConvertResult:
             min_line_length_px=int(preset_cfg.get("min_line_length_px", 25)),
         )
         segments = refine_segments(segments, preset=options.preset, config=preset_cfg)
+
+        warnings: list[str] = []
+        dimension_report: dict[str, Any] | None = None
+        dimension_annotations: list[dict[str, Any]] = []
+        if options.snap_dimensions:
+            try:
+                from .dimension_ocr import extract_dimensions
+                from .dimension_snap import snap_segments_to_dimensions
+
+                labels, ocr_meta = extract_dimensions(
+                    bgr,
+                    binary,
+                    manual_labels=options.manual_dimensions,
+                )
+                snap = snap_segments_to_dimensions(
+                    segments,
+                    labels,
+                    image_height=float(h),
+                    base_scale_mm_per_pixel=scale,
+                    max_dist_px=float(options.dimension_max_dist_px),
+                )
+                segments = snap.segments
+                scale = snap.scale_mm_per_pixel
+                dimension_report = {
+                    **snap.to_dict(),
+                    "ocr": ocr_meta,
+                    "labels_found": [label.to_dict() for label in labels],
+                }
+                for match in snap.matches:
+                    label = match.label
+                    dimension_annotations.append(
+                        {
+                            "text": str(int(label.value_mm)),
+                            "cad_x": label.center_x * scale,
+                            "cad_y": (h - label.center_y) * scale,
+                        }
+                    )
+            except Exception as exc:
+                dimension_report = {"warnings": [f"尺寸吸附失败: {exc}"]}
+                warnings.append(f"尺寸吸附失败: {exc}")
+
         assign_layers(segments, float(preset_cfg.get("thick_line_threshold_px", 4)))
 
         quality_report = grade_score(segments, preset=options.preset, ink_ratio=ink_ratio)
 
-        warnings: list[str] = []
         if not segments:
             warnings.append("未检测到有效线段，请尝试 preset=sketch_rough 或提高图片质量")
         if quality_report.get("issues"):
@@ -167,6 +212,10 @@ def convert_sketch_to_dxf(options: SketchConvertOptions) -> SketchConvertResult:
             warnings.append(
                 f"建议以 preset={quality_report['suggest_rerun_with']} 重新转换"
             )
+        if dimension_report and dimension_report.get("warnings"):
+            for w in dimension_report["warnings"]:
+                if w not in warnings:
+                    warnings.append(w)
 
         render_preview(binary, segments, str(preview_path))
         meta = write_dxf(
@@ -174,6 +223,7 @@ def convert_sketch_to_dxf(options: SketchConvertOptions) -> SketchConvertResult:
             str(dxf_path),
             scale_mm_per_pixel=scale,
             project_name=options.project_name,
+            dimension_annotations=dimension_annotations or None,
         )
 
         dwg_path: str | None = None
@@ -203,6 +253,7 @@ def convert_sketch_to_dxf(options: SketchConvertOptions) -> SketchConvertResult:
             scale_mm_per_pixel=scale,
             cad_check=cad_check_result,
             quality=quality_report,
+            dimension_report=dimension_report,
             warnings=warnings,
         )
     except Exception as e:

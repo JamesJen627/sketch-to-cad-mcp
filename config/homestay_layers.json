@@ -60,7 +60,13 @@
       "grid_morph_h": 64,
       "grid_morph_v": 64,
       "grid_min_wall_thickness": 4,
-      "grid_max_stroke_radius": 1.6
+      "grid_max_stroke_radius": 1.6,
+      "grid_dark_percentile": 18,
+      "grid_line_width": 2,
+      "grid_dot_radius": 2,
+      "grid_min_blob_area": 12,
+      "grid_period_h": 0,
+      "grid_period_w": 0
     }
   }
 }
