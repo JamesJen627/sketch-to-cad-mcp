@@ -35,13 +35,32 @@
       "merge_angle_tol_deg": 8
     },
     "sketch_rough": {
-      "description": "潦草草图 / 手机拍照",
+      "description": "潦草草图 / 手机拍照（无网格纸）",
       "scale_mm_per_pixel": 10.0,
       "min_line_length_px": 15,
       "thick_line_threshold_px": 3,
       "canny_low": 25,
       "canny_high": 90,
       "adaptive_threshold": true
+    },
+    "survey_grid_paper": {
+      "description": "橙/蓝方格纸实拍测绘图（去网格）",
+      "scale_mm_per_pixel": 20.0,
+      "min_line_length_px": 40,
+      "thick_line_threshold_px": 5,
+      "canny_low": 30,
+      "canny_high": 100,
+      "merge_gap_px": 20,
+      "duplicate_dist_px": 12,
+      "min_segment_length_px": 35,
+      "snap_angle_deg": 10,
+      "merge_angle_tol_deg": 8,
+      "suppress_grid": true,
+      "grid_ink_threshold": 0,
+      "grid_morph_h": 64,
+      "grid_morph_v": 64,
+      "grid_min_wall_thickness": 4,
+      "grid_max_stroke_radius": 1.6
     }
   }
 }

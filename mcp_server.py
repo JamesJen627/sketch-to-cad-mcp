@@ -106,9 +106,9 @@ TOOLS: list[dict[str, Any]] = [
                 "input_path": {"type": "string", "description": "输入图片路径（PNG/JPG）"},
                 "preset": {
                     "type": "string",
-                    "enum": ["floor_plan", "site_plan", "sketch_rough"],
-                    "default": "floor_plan",
-                    "description": "floor_plan=室内平面, site_plan=总平, sketch_rough=潦草/手机拍照",
+                  "enum": ["floor_plan", "site_plan", "sketch_rough", "survey_grid_paper"],
+                  "default": "floor_plan",
+                  "description": "floor_plan=室内平面, site_plan=总平, sketch_rough=潦草/手机拍照, survey_grid_paper=橙蓝方格纸实拍",
                 },
             },
             "required": ["input_path"],
@@ -133,7 +133,7 @@ TOOLS: list[dict[str, Any]] = [
                 "output_name": {"type": "string", "description": "输出文件名（不含扩展名）"},
                 "preset": {
                     "type": "string",
-                    "enum": ["floor_plan", "site_plan", "sketch_rough"],
+                    "enum": ["floor_plan", "site_plan", "sketch_rough", "survey_grid_paper"],
                     "default": "floor_plan",
                 },
                 "scale_mm_per_pixel": {
@@ -166,7 +166,7 @@ TOOLS: list[dict[str, Any]] = [
                 "output_name": {"type": "string"},
                 "preset": {
                     "type": "string",
-                    "enum": ["floor_plan", "site_plan", "sketch_rough"],
+                    "enum": ["floor_plan", "site_plan", "sketch_rough", "survey_grid_paper"],
                     "default": "floor_plan",
                 },
                 "scale_mm_per_pixel": {"type": "number"},

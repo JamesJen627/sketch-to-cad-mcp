@@ -120,7 +120,10 @@ def grade_score(
     grade = "A" if score >= 80 else "B" if score >= 60 else "C"
 
     if score < 70 and preset != "sketch_rough":
-        suggest_rerun_with = "sketch_rough"
+        if ink_ratio is not None and ink_ratio > 0.18:
+            suggest_rerun_with = "survey_grid_paper"
+        else:
+            suggest_rerun_with = "sketch_rough"
     elif score < 80 and preset == "floor_plan":
         suggest_rerun_with = "site_plan" if ortho < 0.4 else None
 

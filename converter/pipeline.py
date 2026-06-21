@@ -10,7 +10,7 @@ from typing import Any
 from .config_loader import get_preset
 from .dxf_writer import assign_layers, write_dxf
 from .postprocess import refine_segments
-from .preprocess import preprocess
+from .preprocess import load_image, preprocess
 from .quality import grade_score
 from .vectorize import extract_lines, render_preview
 
@@ -86,10 +86,19 @@ def analyze_sketch(input_path: str, preset: str = "floor_plan") -> dict[str, Any
         input_path,
         deskew_enabled=True,
         adaptive_threshold=bool(preset_cfg.get("adaptive_threshold", False)),
+        suppress_grid=bool(preset_cfg.get("suppress_grid", False)),
+        grid_config=preset_cfg,
     )
     h, w = gray.shape[:2]
     ink_ratio = float(binary.sum() / 255) / max(h * w, 1)
     recommendations: list[str] = []
+
+    from .grid_suppress import detect_colored_grid_paper
+
+    bgr = load_image(input_path)
+    grid_info = detect_colored_grid_paper(bgr)
+    if grid_info["is_grid_paper"]:
+        recommendations.append("检测到方格纸，建议使用 preset=survey_grid_paper")
     if ink_ratio < 0.005:
         recommendations.append("线条过少，建议使用 preset=sketch_rough 或检查图片对比度")
     if ink_ratio > 0.35:
@@ -102,6 +111,7 @@ def analyze_sketch(input_path: str, preset: str = "floor_plan") -> dict[str, Any
         "height": h,
         "ink_ratio": round(ink_ratio, 4),
         "preset": preset,
+        "grid_paper": grid_info,
         "recommendations": recommendations,
     }
 
@@ -130,6 +140,9 @@ def convert_sketch_to_dxf(options: SketchConvertOptions) -> SketchConvertResult:
             str(input_path),
             deskew_enabled=options.deskew,
             adaptive_threshold=bool(preset_cfg.get("adaptive_threshold", False)),
+            suppress_grid=bool(preset_cfg.get("suppress_grid", False)),
+            grid_config=preset_cfg,
+            debug_dir=str(out_dir) if preset_cfg.get("suppress_grid") else None,
         )
         h, w = gray.shape[:2]
         ink_ratio = float(binary.sum() / 255) / max(h * w, 1)
